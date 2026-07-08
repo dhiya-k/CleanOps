@@ -117,7 +117,7 @@ export function ImageAnalyzer({ onAnalysisComplete, existingAnalysis }: ImageAna
       const formData = new FormData();
       formData.append("file", selectedFile);
 
-      const response = await fetch("http://localhost:8000/api/analyze-image", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/analyze-image`, {
         method: "POST",
         body: formData,
       });
