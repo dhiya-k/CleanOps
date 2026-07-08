@@ -12,7 +12,7 @@ export function LanguageSelector({ value, onChange }: LanguageSelectorProps) {
       onChange={(event) => onChange?.(event.target.value)}
       className="h-10 rounded-md border bg-card px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
     >
-      {languages.filter((language) => ["English", "Kannada"].includes(language)).map((language) => (
+      {languages.map((language) => (
         <option key={language}>{language}</option>
       ))}
     </select>

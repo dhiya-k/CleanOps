@@ -19,7 +19,7 @@ export default async function ComplaintDetailsPage({ params }: ComplaintDetailsP
   return (
     <PageContainer
       title={complaint.id}
-      description="Complaint details placeholder with no backend connection."
+      description={`${complaint.title} — ${complaint.ward}. Priority: ${complaint.priority}.`}
     >
       <ComplaintDetails complaint={complaint} />
     </PageContainer>

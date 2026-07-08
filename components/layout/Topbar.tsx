@@ -1,14 +1,24 @@
+"use client";
+
 import { Bell, Building2, ChevronDown, Menu } from "lucide-react";
 
+import { useSidebar } from "@/components/layout/SidebarContext";
 import { Button } from "@/components/ui/button";
 import { APP_NAME, APP_TAGLINE } from "@/lib/constants";
 
 export function Topbar() {
+  const { toggle } = useSidebar();
+
   return (
     <header className="sticky top-0 z-20 border-b bg-background/92 px-4 py-4 backdrop-blur md:px-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" className="size-10 px-0" aria-label="Open navigation">
+          <Button
+            variant="ghost"
+            className="size-10 px-0"
+            aria-label="Toggle sidebar"
+            onClick={toggle}
+          >
             <Menu className="size-5" />
           </Button>
           <div className="flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground lg:hidden">

@@ -7,7 +7,7 @@ import { AICopilotCard } from "@/components/copilot/AICopilotCard";
 import { ImageAnalyzer } from "@/components/copilot/ImageAnalyzer";
 import { OperationsBrief } from "@/components/copilot/OperationsBrief";
 import { StrategyComparisonTable } from "@/components/copilot/StrategyComparisonTable";
-import { StrategyRecommendation } from "@/components/copilot/StrategyRecommendation";
+import { type ImpactMetrics, StrategyRecommendation } from "@/components/copilot/StrategyRecommendation";
 import { ClusterCard } from "@/components/workplan/ClusterCard";
 import { CrewCard } from "@/components/workplan/CrewCard";
 import { WorkPlanSummary } from "@/components/workplan/WorkPlanSummary";
@@ -123,14 +123,33 @@ export function CopilotWorkspace() {
   const crewItems = useMemo(() => (planning.response ? toCrewItems(planning.response) : []), [planning.response]);
   const clusterItems = useMemo(() => (planning.response ? toClusterItems(planning.response) : []), [planning.response]);
   const summaryItems = useMemo(() => (planning.response ? toSummaryItems(planning.response) : []), [planning.response]);
-  const recommendation = planning.response
-    ? {
-        title: "Recommended Strategy",
-        strategyName: planning.response.recommended_strategy.name,
-        confidence: planning.response.recommended_strategy.confidence,
-        reasons: planning.response.recommended_strategy.reason
-      }
-    : null;
+  const recommendation = useMemo(() => {
+    if (!planning.response) return null;
+
+    const plan = planning.response;
+    const recRow = plan.comparison.find((c) => c.strategy === plan.recommended_strategy.name);
+    const totalComplaints = plan.workplan.reduce((t, w) => t + w.complaints, 0);
+    const maxETA = plan.workplan.map((w) => w.eta).sort().pop() ?? "N/A";
+
+    const impact: ImpactMetrics = {
+      complaintsCovered: `${totalComplaints} complaints`,
+      travelDistance: recRow?.travel ?? "Optimised",
+      fuelUsage: recRow?.fuel ?? "Efficient",
+      completionETA: maxETA
+    };
+
+    const shortReasons = plan.recommended_strategy.reason.slice(0, 4);
+    const detailedReasons = plan.recommended_strategy.reason;
+
+    return {
+      title: "Recommended Strategy",
+      strategyName: plan.recommended_strategy.name,
+      confidence: plan.recommended_strategy.confidence,
+      reasons: shortReasons,
+      impact,
+      detailedReasons
+    };
+  }, [planning.response]);
 
   useEffect(() => {
     if (!planning.toastMessage) {
@@ -181,46 +200,46 @@ export function CopilotWorkspace() {
 
   return (
     <>
-      <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <AICopilotCard
-          brief={brief}
-          language={language}
-          isLoading={planning.isLoading}
-          loadingMessages={loadingMessages}
-          onBriefChange={setBrief}
-          onLanguageChange={setLanguage}
-          onGeneratePlan={generatePlan}
-        />
-        <div className="space-y-6">
-          <OperationsBrief />
-          <StrategyRecommendation recommendation={recommendation} />
-        </div>
-      </div>
+      {/* 1. Today's Context — includes Language + Generate AI Plan */}
+      <AICopilotCard
+        brief={brief}
+        language={language}
+        isLoading={planning.isLoading}
+        loadingMessages={loadingMessages}
+        onBriefChange={setBrief}
+        onLanguageChange={setLanguage}
+        onGeneratePlan={generatePlan}
+      />
 
-      {planning.toastMessage ? (
-        <Card className="fixed bottom-4 right-4 z-50 w-[min(24rem,calc(100vw-2rem))] border-danger/30 shadow-lg">
-          <CardContent className="flex items-center gap-3 p-4">
-            <AlertCircle className="size-5 text-danger" />
-            <p className="text-sm font-medium text-danger">{planning.toastMessage}</p>
-          </CardContent>
-        </Card>
-      ) : null}
-
-      <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
+      {/* 2. Officer Notes + 4. Image Upload */}
+      <div className="grid gap-6 xl:grid-cols-2">
+        <OperationsBrief />
         <ImageAnalyzer
           onAnalysisComplete={setVisionAnalysis}
           existingAnalysis={visionAnalysis}
         />
-        <div className="space-y-6">
-          <StrategyComparisonTable plan={planning.response} recommendedStrategyName={planning.response?.recommended_strategy.name} />
-        </div>
       </div>
 
-      <section className="space-y-6">
-        <WorkPlanSummary items={summaryItems} />
+      {/* 6. Recommended Strategy */}
+      <StrategyRecommendation recommendation={recommendation} />
+
+      {/* 7. Strategy Comparison Table */}
+      <StrategyComparisonTable
+        plan={planning.response}
+        recommendedStrategyName={planning.response?.recommended_strategy.name}
+      />
+
+      {/* 8. Work Plan Summary */}
+      <WorkPlanSummary items={summaryItems} />
+
+      {/* 9. Crew Assignments */}
+      <section>
+        <h2 className="mb-4 text-lg font-semibold">Crew Assignments</h2>
         <div className="grid gap-6 lg:grid-cols-2">
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold">Crews</h2>
+          <div className="space-y-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Crews
+            </h3>
             {crewItems.length > 0 ? (
               crewItems.map((crew) => <CrewCard key={crew.id} crew={crew} />)
             ) : (
@@ -232,8 +251,10 @@ export function CopilotWorkspace() {
             )}
           </div>
 
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold">Clusters</h2>
+          <div className="space-y-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Clusters
+            </h3>
             {clusterItems.length > 0 ? (
               clusterItems.map((cluster) => <ClusterCard key={cluster.id} cluster={cluster} />)
             ) : (
@@ -247,15 +268,32 @@ export function CopilotWorkspace() {
         </div>
       </section>
 
+      {/* Actions */}
       <div className="flex flex-col gap-3 sm:flex-row">
-        <Button className="h-11 px-6" disabled={!planning.response}>Accept Plan</Button>
-        <Button variant="outline" className="h-11 px-6" onClick={generatePlan} disabled={planning.isLoading}>
+        <Button className="h-11 px-6" disabled={!planning.response}>
+          Accept Plan
+        </Button>
+        <Button
+          variant="outline"
+          className="h-11 px-6"
+          onClick={generatePlan}
+          disabled={planning.isLoading}
+        >
           Regenerate
         </Button>
         <Button variant="secondary" className="h-11 px-6" disabled={!planning.response}>
           Customize Strategy
         </Button>
       </div>
+
+      {planning.toastMessage ? (
+        <Card className="fixed bottom-4 right-4 z-50 w-[min(24rem,calc(100vw-2rem))] border-danger/30 shadow-lg">
+          <CardContent className="flex items-center gap-3 p-4">
+            <AlertCircle className="size-5 text-danger" />
+            <p className="text-sm font-medium text-danger">{planning.toastMessage}</p>
+          </CardContent>
+        </Card>
+      ) : null}
     </>
   );
 }

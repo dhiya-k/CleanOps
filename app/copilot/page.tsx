@@ -5,7 +5,7 @@ export default function CopilotPage() {
   return (
     <PageContainer
       title="AI Copilot"
-      description="Placeholder copilot workspace for municipal operations planning."
+      description="Generate, compare, and optimise daily municipal operations plans using AI-powered planning engines."
     >
       <CopilotWorkspace />
     </PageContainer>

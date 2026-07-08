@@ -16,7 +16,7 @@ export function OperationsBrief() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Today&apos;s Context</CardTitle>
+        <CardTitle>Officer Notes</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-3">
         {items.map((item) => {
